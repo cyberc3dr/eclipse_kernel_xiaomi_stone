@@ -1,0 +1,3 @@
+[submodule "vpnhide-driver"]
+	path = "vpnhide-driver"
+	url = https://github.com/cyberc3dr/vpnhide-driver.git
