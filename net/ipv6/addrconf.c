@@ -90,6 +90,12 @@
 #include <linux/seq_file.h>
 #include <linux/export.h>
 
+#ifdef CONFIG_VPNHIDE
+extern bool vpnhide_is_target_uid(void);
+extern bool vpnhide_is_vpn_ifname(const char *name);
+extern bool vpnhide_debug_enabled;
+#endif
+
 #define	INFINITY_LIFE_TIME	0xFFFFFFFF
 
 #define IPV6_MAX_STRLEN \
@@ -4972,6 +4978,16 @@ struct inet6_fill_args {
 static int inet6_fill_ifaddr(struct sk_buff *skb, struct inet6_ifaddr *ifa,
 			     struct inet6_fill_args *args)
 {
+#ifdef CONFIG_VPNHIDE
+	if (vpnhide_is_target_uid() &&
+	    ifa->idev && ifa->idev->dev &&
+	    vpnhide_is_vpn_ifname(ifa->idev->dev->name)) {
+		if(vpnhide_debug_enabled)
+			pr_info("vpnhide: inet6_fill_ifaddr: hiding iface=%s\n",
+			    ifa->idev->dev->name);
+		return 0;
+	}
+#endif	
 	struct nlmsghdr  *nlh;
 	u32 preferred, valid;
 

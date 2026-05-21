@@ -62,6 +62,12 @@
 #include <net/net_namespace.h>
 #include <net/addrconf.h>
 
+#ifdef CONFIG_VPNHIDE
+extern bool vpnhide_is_target_uid(void);
+extern bool vpnhide_is_vpn_ifname(const char *name);
+extern bool vpnhide_debug_enabled;
+#endif
+
 #define IPV6ONLY_FLAGS	\
 		(IFA_F_NODAD | IFA_F_OPTIMISTIC | IFA_F_DADFAILED | \
 		 IFA_F_HOMEADDRESS | IFA_F_TENTATIVE | \
@@ -1662,6 +1668,16 @@ static int put_cacheinfo(struct sk_buff *skb, unsigned long cstamp,
 static int inet_fill_ifaddr(struct sk_buff *skb, struct in_ifaddr *ifa,
 			    struct inet_fill_args *args)
 {
+#ifdef CONFIG_VPNHIDE
+	if (vpnhide_is_target_uid() &&
+	    ifa->ifa_dev && ifa->ifa_dev->dev &&
+	    vpnhide_is_vpn_ifname(ifa->ifa_dev->dev->name)) {
+		if(vpnhide_debug_enabled)
+			pr_info("vpnhide: inet_fill_ifaddr: hiding iface=%s\n",
+			    ifa->ifa_dev->dev->name);
+		return 0;
+	}
+#endif	
 	struct ifaddrmsg *ifm;
 	struct nlmsghdr  *nlh;
 	u32 preferred, valid;

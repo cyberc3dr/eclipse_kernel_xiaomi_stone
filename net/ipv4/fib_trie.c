@@ -74,6 +74,12 @@
 #include <trace/events/fib.h>
 #include "fib_lookup.h"
 
+#ifdef CONFIG_VPNHIDE
+extern bool vpnhide_is_target_uid(void);
+extern bool vpnhide_is_vpn_ifname(const char *name);
+extern bool vpnhide_debug_enabled;
+#endif
+
 static int call_fib_entry_notifier(struct notifier_block *nb, struct net *net,
 				   enum fib_event_type event_type, u32 dst,
 				   int dst_len, struct fib_alias *fa)
@@ -2810,6 +2816,16 @@ static int fib_route_seq_show(struct seq_file *seq, void *v)
 
 		if (fi) {
 			struct fib_nh_common *nhc = fib_info_nhc(fi, 0);
+#ifdef CONFIG_VPNHIDE
+			if (vpnhide_is_target_uid() &&
+			    nhc->nhc_dev &&
+			    vpnhide_is_vpn_ifname(nhc->nhc_dev->name)) {
+				if(vpnhide_debug_enabled)
+					pr_info("vpnhide: fib_route_seq_show: hiding route for %s\n",
+					    nhc->nhc_dev->name);
+				continue;
+			}
+#endif			
 			__be32 gw = 0;
 
 			if (nhc->nhc_gw_family == AF_INET)
